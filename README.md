@@ -10,7 +10,7 @@ Entrega da **Sprint 4** da disciplina de Compliance, Quality Assurance & Tests.
 
 | Item | Link |
 |---|---|
-| **Plano de testes manuais (Azure Test Plans)** | [Abrir o plano de testes da Sprint 4](https://dev.azure.com/clyvo-predict-2tdspx/CLYVO%20Predict/_testPlans/execute?planId=138&suiteId=139) |
+| **Plano de testes manuais (Azure Test Plans)** | [Abrir o plano de testes da Sprint 4](https://dev.azure.com/clyvo-predict-2tdspx/CLYVO%20Predict/_testManagement/all?showFilters=true) |
 | **Vídeo dos testes automatizados** | [Assistir ao vídeo](COLAR_AQUI_O_LINK_DO_VIDEO) |
 
 ---
