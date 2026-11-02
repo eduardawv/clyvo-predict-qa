@@ -10,7 +10,7 @@ Entrega da **Sprint 4** da disciplina de Compliance, Quality Assurance & Tests.
 
 | Item | Link |
 |---|---|
-| **Plano de testes manuais (Azure Test Plans)** | [Abrir o plano de testes da Sprint 4](https://dev.azure.com/clyvo-predict-2tdspx/CLYVO%20Predict/_testManagement/all?showFilters=true) |
+| **Plano de testes manuais (Azure Test Plans)** | [Abrir os planos de teste (Sprints 2, 3 e 4)](https://dev.azure.com/clyvo-predict-2tdspx/CLYVO%20Predict/_testManagement/all?showFilters=true) |
 | **Vídeo dos testes automatizados** | [Assistir ao vídeo](https://youtu.be/gespfgLYYAM) |
 
 ---
@@ -57,17 +57,17 @@ Os dois bugs estão registrados no Azure, vinculados aos casos que os reproduzem
 
 ## Parte A — Plano de testes manuais
 
-**14 casos de teste** em **5 suítes**, uma por Product Backlog Item, no plano de teste da Sprint 4 do Azure Test Plans.
+**14 casos de teste** em **5 suítes**, uma por Product Backlog Item. No Azure Test Plans, cada suíte fica no plano da sprint do seu PBI, conforme o release plan.
 
 Documento completo: [`repo-qa/plano-de-testes/PLANO_TESTES_PARTE_A.md`](repo-qa/plano-de-testes/PLANO_TESTES_PARTE_A.md)
 
-| Suíte (PBI) | Casos |
-|---|---|
-| Autenticação e autorização com Spring Security | 4 |
-| CRUD de pets na API | 4 |
-| Recálculo automático do score por evento | 2 |
-| Score Engine v1 | 2 |
-| Listagem de pets ordenada por score | 2 |
+| Suíte (PBI) | Plano | Casos |
+|---|---|---|
+| Autenticação e autorização com Spring Security | Sprint 3 | 4 |
+| CRUD de pets na API | Sprint 2 | 4 |
+| Recálculo automático do score por evento | Sprint 3 | 2 |
+| Score Engine v1 | Sprint 2 | 2 |
+| Listagem de pets ordenada por score | Sprint 4 | 2 |
 
 Cada critério de aceite dos PBIs foi escrito em **Gherkin** (DADO / QUANDO / ENTÃO) e deu origem a um caso de teste. O título de cada caso começa pelo **status code HTTP esperado**, o que mantém visível a ligação entre o critério de aceite e o teste.
 
