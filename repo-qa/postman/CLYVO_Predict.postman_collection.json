@@ -1,0 +1,1563 @@
+{
+  "info": {
+    "name": "CLYVO Predict — Testes Automatizados (Sprint 4)",
+    "description": "Suite de testes de integracao e seguranca da API CLYVO Predict.\n\nCobre os fluxos principais (cadastro, login, CRUD de pets, eventos e Health Score) e as regras de autorizacao por proprietario (ownership) corrigidas na Sprint 4.\n\nExecucao: selecione o environment 'CLYVO Predict' e rode a collection inteira (Run collection) na ordem em que esta.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Setup (cria usuarios e faz login)",
+      "item": [
+        {
+          "name": "S01 - Cadastrar Tutor A",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// gera um sufixo unico por execucao, para a suite poder rodar varias vezes",
+                  "if (!pm.collectionVariables.get('runId')) {",
+                  "    pm.collectionVariables.set('runId', Date.now());",
+                  "}",
+                  "const r = pm.collectionVariables.get('runId');",
+                  "pm.collectionVariables.set('emailTutorA', 'tutor.a.' + r + '@clyvo.test');",
+                  "pm.collectionVariables.set('emailTutorB', 'tutor.b.' + r + '@clyvo.test');",
+                  "pm.collectionVariables.set('emailVetA',   'vet.a.'   + r + '@clyvo.test');",
+                  "pm.collectionVariables.set('emailVetB',   'vet.b.'   + r + '@clyvo.test');",
+                  "pm.collectionVariables.set('crmvA', 'SP-' + String(r).slice(-6) + '1');",
+                  "pm.collectionVariables.set('crmvB', 'SP-' + String(r).slice(-6) + '2');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('Retorna o ID do tutor', () => pm.expect(b.id).to.be.a('number'));",
+                  "pm.test('NAO retorna a senha', () => pm.expect(b).to.not.have.property('senha'));",
+                  "pm.collectionVariables.set('idTutorA', b.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores"
+              ]
+            },
+            "description": "Cadastro publico de tutor. Valida que a resposta traz o ID e nao expoe a senha.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Tutor A\",\n  \"email\": \"{{emailTutorA}}\",\n  \"telefone\": \"11999990001\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "S02 - Cadastrar Tutor B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('idTutorB', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Tutor B\",\n  \"email\": \"{{emailTutorB}}\",\n  \"telefone\": \"11999990002\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "S03 - Cadastrar Veterinario A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('idVetA', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/veterinarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veterinarios"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Vet A\",\n  \"email\": \"{{emailVetA}}\",\n  \"senha\": \"Senha@123\",\n  \"crmv\": \"{{crmvA}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "S04 - Cadastrar Veterinario B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('idVetB', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/veterinarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veterinarios"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Vet B\",\n  \"email\": \"{{emailVetB}}\",\n  \"senha\": \"Senha@123\",\n  \"crmv\": \"{{crmvB}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "S05 - Login Tutor A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Retorna um token JWT', () => pm.expect(b.token).to.be.a('string').and.to.include('.'));",
+                  "pm.test('Perfil e TUTOR', () => pm.expect(b.perfil).to.eql('TUTOR'));",
+                  "pm.collectionVariables.set('tokenTutorA', b.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailTutorA}}\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "S06 - Login Tutor B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Retorna um token JWT', () => pm.expect(b.token).to.be.a('string').and.to.include('.'));",
+                  "pm.test('Perfil e TUTOR', () => pm.expect(b.perfil).to.eql('TUTOR'));",
+                  "pm.collectionVariables.set('tokenTutorB', b.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailTutorB}}\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "S07 - Login Veterinario A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Retorna um token JWT', () => pm.expect(b.token).to.be.a('string'));",
+                  "pm.test('Perfil e VETERINARIO', () => pm.expect(b.perfil).to.eql('VETERINARIO'));",
+                  "pm.collectionVariables.set('tokenVetA', b.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/veterinarios/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veterinarios",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailVetA}}\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "S08 - Login Veterinario B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Retorna um token JWT', () => pm.expect(b.token).to.be.a('string'));",
+                  "pm.test('Perfil e VETERINARIO', () => pm.expect(b.perfil).to.eql('VETERINARIO'));",
+                  "pm.collectionVariables.set('tokenVetB', b.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/veterinarios/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veterinarios",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailVetB}}\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Fluxos principais",
+      "item": [
+        {
+          "name": "CT01 - Cadastro de pet ignora o tutorId enviado no corpo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('O dono do pet e o tutor do token, nao o tutorId 999999 do corpo',",
+                  "    () => pm.expect(b.tutorId).to.eql(Number(pm.collectionVariables.get('idTutorA'))));",
+                  "pm.test('Health Score inicial e 100', () => pm.expect(b.healthScore).to.eql(100));",
+                  "pm.collectionVariables.set('idPetA', b.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ]
+            },
+            "description": "CRITICO. Envia tutorId=999999 no corpo. O sistema deve ignorar esse valor e usar o ID do tutor autenticado (claim 'id' do JWT). Antes da correcao, era possivel cadastrar pet na conta de outra pessoa.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Rex\",\n  \"especie\": \"Cão\",\n  \"raca\": \"SRD\",\n  \"idade\": 3,\n  \"peso\": 10.5,\n  \"tutorId\": 999999\n}"
+            }
+          }
+        },
+        {
+          "name": "CT02 - Tutor lista apenas os proprios pets",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "const meuId = Number(pm.collectionVariables.get('idTutorA'));",
+                  "pm.test('A lista contem o pet cadastrado', () => pm.expect(b.content.length).to.be.above(0));",
+                  "pm.test('Todos os pets retornados pertencem ao tutor autenticado',",
+                  "    () => b.content.forEach(p => pm.expect(p.tutorId).to.eql(meuId)));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT03 - Tutor consulta o proprio pet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna o pet correto', () => pm.expect(pm.response.json().nome).to.eql('Rex'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets",
+                "{{idPetA}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT04 - Tutor atualiza o proprio pet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('Nome foi atualizado', () => pm.expect(b.nome).to.eql('Rex Atualizado'));",
+                  "pm.test('O dono do pet nao mudou',",
+                  "    () => pm.expect(b.tutorId).to.eql(Number(pm.collectionVariables.get('idTutorA'))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets",
+                "{{idPetA}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Rex Atualizado\",\n  \"especie\": \"Cão\",\n  \"raca\": \"Labrador\",\n  \"idade\": 4,\n  \"peso\": 12.0\n}"
+            }
+          }
+        },
+        {
+          "name": "CT05 - Registrar DOENCA_LEVE reduz o Health Score em 15 pontos",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('idPetANum', Number(pm.collectionVariables.get('idPetA')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.test('Score caiu de 100 para 85', () => pm.expect(b.novoHealthScore).to.eql(85));",
+                  "pm.test('O evento esta vinculado ao pet correto',",
+                  "    () => pm.expect(b.petId).to.eql(Number(pm.collectionVariables.get('idPetA'))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "eventos"
+              ]
+            },
+            "description": "Valida o motor de Health Score (padrao Strategy no enum TipoEvento). DOENCA_LEVE tem impacto de -15 pontos.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"petId\": \"{{idPetA}}\",\n  \"tipoEvento\": \"DOENCA_LEVE\",\n  \"descricao\": \"Teste automatizado - doenca leve\",\n  \"dataEvento\": \"2026-10-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "CT06 - A listagem reflete o score atualizado (cache por usuario)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const pet = pm.response.json().content.find(p => p.id === Number(pm.collectionVariables.get('idPetA')));",
+                  "pm.test('O pet aparece na listagem', () => pm.expect(pet).to.not.be.undefined);",
+                  "pm.test('Score na listagem e 85, nao o valor antigo em cache',",
+                  "    () => pm.expect(pet.healthScore).to.eql(85));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ]
+            },
+            "description": "Valida a invalidacao do cache. Antes da correcao, a chave do @Cacheable nao incluia o usuario, o que devolvia dados desatualizados e de outros tutores."
+          }
+        },
+        {
+          "name": "CT07 - Tutor consulta o historico do proprio pet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "pm.test('O historico contem o evento registrado', () => pm.expect(b.content.length).to.be.above(0));",
+                  "pm.test('O evento e do tipo DOENCA_LEVE',",
+                  "    () => pm.expect(b.content.map(e => e.tipoEvento)).to.include('DOENCA_LEVE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/eventos/pet/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "eventos",
+                "pet",
+                "{{idPetA}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT08 - Tutor registra RELATO_SINTOMA (tipo de evento do tutor)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', () => pm.response.to.have.status(201));",
+                  "pm.test('Score caiu de 85 para 80', () => pm.expect(pm.response.json().novoHealthScore).to.eql(80));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "eventos"
+              ]
+            },
+            "description": "Tipo de evento criado na Sprint 4 para o tutor registrar observacoes entre consultas. Impacto de -5 pontos.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"petId\": \"{{idPetA}}\",\n  \"tipoEvento\": \"RELATO_SINTOMA\",\n  \"descricao\": \"Pet comendo menos desde ontem\",\n  \"dataEvento\": \"2026-10-01\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Seguranca e ownership",
+      "item": [
+        {
+          "name": "CT09 - Tutor B nao ve os pets do Tutor A na listagem",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "const b = pm.response.json();",
+                  "const idPetA = Number(pm.collectionVariables.get('idPetA'));",
+                  "pm.test('O pet do Tutor A NAO aparece na lista do Tutor B',",
+                  "    () => pm.expect(b.content.map(p => p.id)).to.not.include(idPetA));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ]
+            },
+            "description": "Antes da correcao, listar() usava findAll() e devolvia os pets de todos os tutores."
+          }
+        },
+        {
+          "name": "CT10 - Tutor B nao consulta pet do Tutor A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "pm.test('Nao vaza dados do pet no corpo da resposta', () => {",
+                  "    pm.expect(pm.response.text()).to.not.include('Rex');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets",
+                "{{idPetA}}"
+              ]
+            },
+            "description": "Antes da correcao, buscarPorId usava findById() sem verificar o dono."
+          }
+        },
+        {
+          "name": "CT11 - Tutor B nao altera pet do Tutor A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "pm.test('Nao vaza dados do pet no corpo da resposta', () => {",
+                  "    pm.expect(pm.response.text()).to.not.include('Rex');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets",
+                "{{idPetA}}"
+              ]
+            },
+            "description": "Tentativa de alterar recurso de terceiro.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Invadido\",\n  \"especie\": \"Cão\",\n  \"raca\": \"X\",\n  \"idade\": 1,\n  \"peso\": 1.0\n}"
+            }
+          }
+        },
+        {
+          "name": "CT12 - Tutor B nao exclui pet do Tutor A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "pm.test('Nao vaza dados do pet no corpo da resposta', () => {",
+                  "    pm.expect(pm.response.text()).to.not.include('Rex');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets",
+                "{{idPetA}}"
+              ]
+            },
+            "description": "Tentativa de exclusao de recurso de terceiro."
+          }
+        },
+        {
+          "name": "CT13 - Tutor B nao registra evento no pet do Tutor A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/eventos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "eventos"
+              ]
+            },
+            "description": "Impede que um terceiro manipule o Health Score de um pet que nao e dele.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"petId\": \"{{idPetA}}\",\n  \"tipoEvento\": \"ACIDENTE\",\n  \"descricao\": \"Tentativa indevida\",\n  \"dataEvento\": \"2026-10-01\"\n}"
+            }
+          }
+        },
+        {
+          "name": "CT14 - Tutor B nao consulta o historico clinico do pet do Tutor A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/eventos/pet/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "eventos",
+                "pet",
+                "{{idPetA}}"
+              ]
+            },
+            "description": "Protege o prontuario. Antes era possivel trocar o petId na URL e ler o historico de qualquer animal."
+          }
+        },
+        {
+          "name": "CT15 - O Health Score do pet do Tutor A nao foi alterado por terceiros",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Score continua 80 (a tentativa do CT13 nao teve efeito)',",
+                  "    () => pm.expect(pm.response.json().healthScore).to.eql(80));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets/{{idPetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets",
+                "{{idPetA}}"
+              ]
+            },
+            "description": "Confirma que a tentativa bloqueada no CT13 nao produziu efeito colateral no banco."
+          }
+        },
+        {
+          "name": "CT16 - Tutor A nao consulta os dados do Tutor B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));",
+                  "pm.test('Nao vaza o e-mail do outro tutor',",
+                  "    () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('emailTutorB')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores/{{idTutorB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores",
+                "{{idTutorB}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT17 - Tutor A nao altera a conta do Tutor B (sequestro de conta)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores/{{idTutorB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores",
+                "{{idTutorB}}"
+              ]
+            },
+            "description": "CRITICO. Este era o pior defeito: o metodo atualizar reescrevia a senha sem verificar o dono, permitindo tomar a conta de qualquer tutor.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Conta Sequestrada\",\n  \"email\": \"invasor@clyvo.test\",\n  \"telefone\": \"11000000000\",\n  \"senha\": \"SenhaDoInvasor@1\"\n}"
+            }
+          }
+        },
+        {
+          "name": "CT18 - A senha do Tutor B continua valida apos a tentativa de sequestro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Login do Tutor B funciona com a senha original',",
+                  "    () => pm.expect(pm.response.json().token).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores",
+                "login"
+              ]
+            },
+            "description": "Prova pratica de que o CT17 nao teve efeito: a senha original do Tutor B ainda autentica.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailTutorB}}\",\n  \"senha\": \"Senha@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "CT19 - Tutor A nao exclui a conta do Tutor B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores/{{idTutorB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores",
+                "{{idTutorB}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT20 - Tutor consulta a propria conta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('NAO retorna a senha', () => pm.expect(pm.response.json()).to.not.have.property('senha'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores/{{idTutorA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores",
+                "{{idTutorA}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT21 - Tutor nao lista a base de tutores",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores"
+              ]
+            },
+            "description": "Antes da correcao, qualquer usuario autenticado obtinha nome, e-mail e telefone de toda a base."
+          }
+        },
+        {
+          "name": "CT22 - Veterinario lista tutores (permitido pelo fluxo clinico)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Retorna uma pagina de tutores', () => pm.expect(pm.response.json()).to.have.property('content'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVetA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tutores",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tutores"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT23 - Veterinario A nao altera o cadastro do Veterinario B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403 Forbidden', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVetA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/veterinarios/{{idVetB}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veterinarios",
+                "{{idVetB}}"
+              ]
+            },
+            "description": "O perfil VETERINARIO nao substitui a verificacao de propriedade da conta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Alterado Indevidamente\",\n  \"email\": \"x@clyvo.test\",\n  \"senha\": \"NovaSenha@1\",\n  \"crmv\": \"SP-000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "CT24 - Veterinario A altera a propria conta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Nome atualizado', () => pm.expect(pm.response.json().nome).to.eql('Vet A Atualizado'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenVetA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/veterinarios/{{idVetA}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "veterinarios",
+                "{{idVetA}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Vet A Atualizado\",\n  \"email\": \"{{emailVetA}}\",\n  \"senha\": \"Senha@123\",\n  \"crmv\": \"{{crmvA}}\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Codigos de erro HTTP",
+      "item": [
+        {
+          "name": "CT25 - Recurso inexistente retorna 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets",
+                "999999999"
+              ]
+            },
+            "description": "Antes da correcao, todo erro de negocio retornava 400."
+          }
+        },
+        {
+          "name": "CT26 - Requisicao sem token retorna 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT27 - Token invalido retorna 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401 Unauthorized', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer token.invalido.aqui"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "CT28 - Dados invalidos retornam 400 com os campos em erro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Lista os campos invalidos', () => pm.expect(pm.response.json()).to.be.an('array').with.length.above(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenTutorA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/pets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "pets"
+              ]
+            },
+            "description": "Valida o Bean Validation e o TratadorDeErros para erro de entrada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"\",\n  \"especie\": \"\",\n  \"idade\": -1,\n  \"peso\": 0\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
