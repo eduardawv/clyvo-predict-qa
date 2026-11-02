@@ -22,10 +22,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// gera um sufixo unico por execucao, para a suite poder rodar varias vezes",
-                  "if (!pm.collectionVariables.get('runId')) {",
-                  "    pm.collectionVariables.set('runId', Date.now());",
-                  "}",
+                  "// gera um sufixo unico a cada execucao. O S01 e sempre a primeira requisicao,",
+                  "// entao todas as requisicoes da mesma execucao compartilham o mesmo runId.",
+                  "pm.collectionVariables.set('runId', Date.now());",
                   "const r = pm.collectionVariables.get('runId');",
                   "pm.collectionVariables.set('emailTutorA', 'tutor.a.' + r + '@clyvo.test');",
                   "pm.collectionVariables.set('emailTutorB', 'tutor.b.' + r + '@clyvo.test');",
