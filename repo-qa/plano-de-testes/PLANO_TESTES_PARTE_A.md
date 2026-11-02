@@ -1,404 +1,481 @@
-# Plano de Testes Manuais - CLYVO Predict - Sprint 4
+# Plano de Testes Manuais — CLYVO Predict — Sprint 4
 ## Parte A | Azure Boards + Azure Test Plans
 
-> Formato seguindo o tutorial "Plano de testes no Azure - passo a passo" (Prof. Douglas Andrade).
-> Regra base: **um caso de teste por criterio de aceite**, titulo iniciado pelo **status code**,
-> dado de teste em **parametro @**, cada passo com **resultado esperado**.
+> Formato do tutorial "Plano de testes no Azure — passo a passo" (Prof. Douglas Andrade).
+> Regras: **um caso de teste por critério de aceite**, título iniciado pelo **status code**,
+> dado de teste em **parâmetro @**, cada passo com **resultado esperado**.
+>
+> Endpoints, corpos e códigos de resposta conferidos no código da branch `sprint-04`.
 
 ---
 
-# 0. ORDEM DE EXECUCAO (nao pule etapas)
+# 0. ANTES DE COMEÇAR
 
-| # | Etapa | Onde | Responsavel sugerido |
-|---|-------|------|----------------------|
-| 0 | Ativar licenca Basic + Test Plans | Organization settings > Billing | Quem administra a org |
-| 1 | Reescrever os criterios de aceite em Gherkin | Boards > Work Items (cada PBI) | Compliance |
-| 2 | Criar os casos pelo card do PBI (Add Test) | Boards > Boards | Compliance |
-| 3 | Escrever os Steps de cada caso | Test Plans > Edit test case | Compliance |
-| 4 | Executar no Test Runner | Test Plans > Execute | Todos (para o grafico "Run by") |
-| 5 | Registrar bug do caso que falhar | Test Runner > Create bug | Quem executou |
-| 6 | Criar os 2 graficos | Test Plans > Chart | Compliance |
-| 7 | Conferir contador no card | Boards > Boards | Compliance |
+## Onde cada coisa acontece
 
-**Atencao na etapa 4:** o grafico "Run by" so faz sentido se mais de uma pessoa executar.
-Divida os casos entre pelo menos 2 integrantes.
+| Etapa | Onde | Precisa da API rodando? |
+|-------|------|-------------------------|
+| Reescrever critérios em Gherkin | Azure, qualquer computador | Não |
+| Criar os casos e escrever os passos | Azure, qualquer computador | Não |
+| Executar os casos | Azure + Swagger, **no computador onde a API roda** | **Sim** |
+
+A API roda em `http://localhost:8080`, que só existe no computador da Eduarda.
+Quem for executar precisa estar nesse computador. Para o gráfico "Run by" mostrar mais
+de um nome, cada pessoa entra no Azure com a própria conta, numa janela anônima do navegador.
+
+## Dados de teste (criados no Bloco 0.3 do guia)
+
+| Usuário | E-mail | Senha |
+|---------|--------|-------|
+| Tutor A | tutor.a@clyvo.com | Senha@123 |
+| Tutor B | tutor.b@clyvo.com | Senha@123 |
+| Veterinário | vet.teste@clyvo.com | Senha@123 |
+
+| Pet | Dono | ID (anotar) |
+|-----|------|-------------|
+| Luna | Tutor A | ____ |
+| Thor | Tutor A | ____ |
+| Mel | Tutor B | ____ |
+
+## Como executar cada passo no Swagger
+
+- **Login e autorização:** chamar o endpoint de login, copiar o valor de `token`, clicar em
+  **Authorize**, colar e confirmar. Para trocar de usuário: **Authorize → Logout** e repetir.
+- **Chamar um endpoint:** expandir → **Try it out** → preencher → **Execute** → conferir
+  **Server response**.
+
+## Ordem de execução
+
+Suíte 1 → 2 → 3 → 4 → 5. Nenhum caso depende de outro, mas essa ordem facilita a leitura dos resultados.
+
+## Dois casos devem falhar — e isso é esperado
+
+A análise do código encontrou dois defeitos reais. Os casos abaixo vão reproduzi-los:
+
+- `[401] Login com senha incorreta é recusado` — a API devolve 400
+- `[200] Listagem ordenada por score crescente` — a ordenação é ignorada
+
+**Não corrijam esses defeitos antes de executar.** O ciclo de QA é: executar → falhar →
+abrir bug → corrigir → reexecutar. Detalhes na seção 3.
 
 ---
 
-# 1. CRITERIOS DE ACEITE EM GHERKIN
+# 1. CRITÉRIOS DE ACEITE EM GHERKIN
 
-Abra cada PBI em **Boards > Work Items**, campo **Acceptance Criteria**, e substitua o texto
-atual pelos cenarios abaixo. Cada cenario vira um caso de teste na secao 2.
+Para cada PBI abaixo: **Boards → Work Items** → abrir o PBI → campo **Acceptance Criteria**
+→ apagar o texto atual → colar o bloco → **Save**.
+
+O Gherkin vai **no PBI**. O caso de teste usa Action / Expected result.
 
 ---
 
-## PBI: Autenticacao e autorizacao com Spring Security
+## PBI `Autenticacao e autorizacao com Spring Security`
 
 ```
-CENARIO 1 - Login com credenciais validas
-DADO um usuario cadastrado com e-mail e senha validos
-QUANDO ele enviar POST /api/auth/login com essas credenciais
-ENTAO o sistema retorna 200 e um token JWT valido
+CENÁRIO 1 - Login com credenciais válidas
+DADO um tutor cadastrado com e-mail e senha válidos
+QUANDO ele enviar POST /api/tutores/login com essas credenciais
+ENTÃO o sistema retorna 200 e um token JWT
 
-CENARIO 2 - Login com senha incorreta
-DADO um usuario cadastrado
-QUANDO ele enviar POST /api/auth/login com a senha errada
-ENTAO o sistema retorna 401 e nao devolve token
+CENÁRIO 2 - Login com senha incorreta
+DADO um tutor cadastrado
+QUANDO ele enviar POST /api/tutores/login com a senha errada
+ENTÃO o sistema retorna 401 e não devolve token
 
-CENARIO 3 - Rota protegida sem token
-DADO um cliente sem autenticacao
+CENÁRIO 3 - Rota protegida sem token
+DADO um cliente sem autenticação
 QUANDO ele chamar GET /api/pets sem o header Authorization
-ENTAO o sistema retorna 401
+ENTÃO o sistema retorna 401
 
-CENARIO 4 - Perfil sem permissao na rota
-DADO um usuario autenticado com perfil TUTOR
+CENÁRIO 4 - Perfil sem permissão na rota
+DADO um usuário autenticado com perfil TUTOR
 QUANDO ele chamar GET /api/tutores, rota exclusiva de VETERINARIO
-ENTAO o sistema retorna 403 e nao expoe a lista de tutores
+ENTÃO o sistema retorna 403 e não expõe a lista de tutores
 ```
 
 ---
 
-## PBI: CRUD de pets na API
+## PBI `CRUD de pets na API`
 
 ```
-CENARIO 1 - Cadastro de pet valido
+CENÁRIO 1 - Cadastro de pet válido
 DADO um tutor autenticado
-QUANDO ele enviar POST /api/pets com nome, especie e data de nascimento validos
-ENTAO o sistema retorna 201 e o pet fica vinculado ao tutor autenticado
+QUANDO ele enviar POST /api/pets com nome, espécie, idade e peso válidos
+ENTÃO o sistema retorna 201, o pet nasce com score 100 e fica vinculado ao tutor autenticado
 
-CENARIO 2 - Cadastro sem campo obrigatorio
+CENÁRIO 2 - Cadastro sem campo obrigatório
 DADO um tutor autenticado
 QUANDO ele enviar POST /api/pets sem o campo nome
-ENTAO o sistema retorna 400 e informa qual campo esta invalido
+ENTÃO o sistema retorna 400 e informa qual campo está inválido
 
-CENARIO 3 - Acesso a pet de outro tutor
-DADO dois tutores distintos, cada um com seu pet
-QUANDO o tutor A chamar GET /api/pets/{id} usando o id do pet do tutor B
-ENTAO o sistema retorna 403 e nao expoe os dados do pet
+CENÁRIO 3 - Acesso a pet de outro tutor
+DADO dois tutores, cada um com seu pet
+QUANDO o tutor B chamar GET /api/pets/{id} com o id de um pet do tutor A
+ENTÃO o sistema retorna 403 e não expõe os dados do pet
 
-CENARIO 4 - Pet inexistente
+CENÁRIO 4 - Pet inexistente
 DADO um tutor autenticado
-QUANDO ele chamar GET /api/pets/{id} com um id que nao existe
-ENTAO o sistema retorna 404
+QUANDO ele chamar GET /api/pets/{id} com um id que não existe
+ENTÃO o sistema retorna 404
 ```
 
 ---
 
-## PBI: Cadastro de vacina com data de reforco
+## PBI `Recalculo automatico do score por evento`
 
 ```
-CENARIO 1 - Registro de vacina completo
-DADO um pet cadastrado e um veterinario autenticado
-QUANDO ele enviar POST /api/eventos com tipo VACINA, data de aplicacao e data de reforco
-ENTAO o sistema retorna 201 e grava as duas datas
+CENÁRIO 1 - Evento clínico atualiza o score
+DADO um pet cadastrado e um veterinário autenticado
+QUANDO o veterinário registrar em POST /api/eventos um evento do tipo DOENCA_LEVE
+ENTÃO o sistema retorna 201 e o score do pet cai 15 pontos na mesma operação
 
-CENARIO 2 - Vacina sem data de aplicacao
-DADO um pet cadastrado e um veterinario autenticado
-QUANDO ele enviar POST /api/eventos do tipo VACINA sem data de aplicacao
-ENTAO o sistema retorna 400 e nao grava o registro
-```
-
----
-
-## PBI: Score Engine v1
-
-```
-CENARIO 1 - Score dentro da faixa valida
-DADO um pet com vacinas e consultas registradas
-QUANDO o score for consultado em GET /api/pets/{id}/score
-ENTAO o sistema retorna 200 e um numero inteiro entre 0 e 100
-
-CENARIO 2 - Score de pet de outro tutor
-DADO dois tutores distintos
-QUANDO o tutor A consultar o score do pet do tutor B
-ENTAO o sistema retorna 403
+CENÁRIO 2 - Evento sem data
+DADO um pet cadastrado e um veterinário autenticado
+QUANDO ele enviar POST /api/eventos sem a data do evento
+ENTÃO o sistema retorna 400 e o score do pet não muda
 ```
 
 ---
 
-## PBI: Listagem de pets ordenada por score
+## PBI `Score Engine v1`
 
 ```
-CENARIO 1 - Listagem retorna apenas os pets do usuario
-DADO um tutor autenticado com 2 pets e outro tutor com 1 pet
+CENÁRIO 1 - Score não ultrapassa 100
+DADO um pet com score 100
+QUANDO for registrado um evento do tipo VACINA, que soma 10 pontos
+ENTÃO o score do pet permanece 100
+
+CENÁRIO 2 - Score nunca fica negativo
+DADO um pet cadastrado
+QUANDO forem registrados três eventos do tipo ACIDENTE, que subtraem 50 pontos cada
+ENTÃO o score do pet chega a 0 e não fica negativo
+```
+
+---
+
+## PBI `Listagem de pets ordenada por score`
+
+```
+CENÁRIO 1 - Tutor vê apenas os próprios pets
+DADO dois tutores, cada um com seus pets
 QUANDO o tutor A chamar GET /api/pets
-ENTAO o sistema retorna 200 e apenas os 2 pets dele
+ENTÃO o sistema retorna 200 somente com os pets do tutor A
 
-CENARIO 2 - Ordenacao por score crescente
-DADO pets com scores diferentes
-QUANDO o painel chamar GET /api/pets?sort=score,asc
-ENTAO o sistema retorna 200 e os pets ordenados do menor para o maior score
+CENÁRIO 2 - Ordenação por score
+DADO um tutor com pets de scores diferentes
+QUANDO ele listar os pets e em seguida chamar GET /api/pets?sort=healthScore,asc
+ENTÃO o sistema retorna 200 com os pets do menor para o maior score
 ```
 
 ---
 
 # 2. CASOS DE TESTE
 
-Total: **14 casos** em **5 suites**.
-Criacao: card do PBI > tres pontos > **Add Test** > digitar o titulo > Enter.
-Depois: Test Plans > passar o mouse no caso > tres pontos > **Edit test case** > preencher Steps.
+**14 casos em 5 suítes.**
+Criação: card do PBI → três pontos → **Add Test** → digitar o título → Enter.
+Roteiro: Test Plans → três pontos no caso → **Edit test case** → preencher **Steps** →
+preencher **Parameter values** → **Save & Close**.
+
+Onde o valor do parâmetro for `ID da Luna`, `ID do Thor` ou `ID da Mel`, use o número
+anotado na tabela da seção 0.
+
+| Suíte (PBI no Azure) | Casos |
+|----------------------|-------|
+| Autenticacao e autorizacao com Spring Security | 4 |
+| CRUD de pets na API | 4 |
+| Recalculo automatico do score por evento | 2 |
+| Score Engine v1 | 2 |
+| Listagem de pets ordenada por score | 2 |
 
 ---
 
-## SUITE 1 - Autenticacao e autorizacao com Spring Security
+## SUÍTE 1 — Autenticação e autorização com Spring Security
 
-### [200] Login com credenciais validas retorna token
+### [200] Login com credenciais válidas retorna token
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Enviar POST para @baseUrl/api/auth/login com Content-Type application/json | Requisicao aceita pelo servidor |
-| 2 | Informar no corpo o e-mail @email e a senha @senha | Corpo da requisicao montado com as credenciais |
-| 3 | Executar a requisicao | Resposta com status 200 |
-| 4 | Inspecionar o corpo da resposta | Campo token presente, em formato JWT com tres blocos separados por ponto |
+| 1 | Abrir no Swagger o endpoint POST /api/tutores/login e clicar em Try it out | Campo de corpo da requisição liberado para edição |
+| 2 | Preencher o corpo com e-mail @emailTutor e senha @senha | Corpo exibido com as credenciais informadas |
+| 3 | Clicar em Execute | Resposta com status 200 |
+| 4 | Conferir o corpo da resposta | Campo token preenchido, com três blocos separados por ponto, e campo perfil igual a TUTOR |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | email = `vet.teste@clyvo.com` | senha = `Senha@123`
+**Parameter values:** emailTutor = `tutor.a@clyvo.com` · senha = `Senha@123`
 
 ---
 
-### [401] Login com senha incorreta e recusado
+### [401] Login com senha incorreta é recusado
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Enviar POST para @baseUrl/api/auth/login | Requisicao aceita pelo servidor |
-| 2 | Informar o e-mail @email e a senha @senhaErrada | Corpo da requisicao montado |
-| 3 | Executar a requisicao | Resposta com status 401 |
-| 4 | Inspecionar o corpo da resposta | Nenhum token e retornado e a mensagem nao revela se o e-mail existe |
+| 1 | Abrir no Swagger o endpoint POST /api/tutores/login e clicar em Try it out | Campo de corpo da requisição liberado para edição |
+| 2 | Preencher o corpo com e-mail @emailTutor e senha @senhaErrada | Corpo exibido com as credenciais informadas |
+| 3 | Clicar em Execute | Resposta com status 401 |
+| 4 | Conferir o corpo da resposta | Nenhum token retornado e a mensagem não revela se o e-mail existe |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | email = `vet.teste@clyvo.com` | senhaErrada = `SenhaErrada999`
+**Parameter values:** emailTutor = `tutor.a@clyvo.com` · senhaErrada = `SenhaErrada999`
+
+> **Resultado previsto: falha no passo 3** (a API devolve 400). O passo 4 passa — a mensagem
+> é genérica e não há token. Marque X no passo 3, check no passo 4, e abra o Bug 1 (seção 3).
 
 ---
 
-### [401] Requisicao sem token e recusada
+### [401] Requisição sem token é recusada
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Enviar GET para @baseUrl/api/pets sem o header Authorization | Requisicao aceita pelo servidor |
-| 2 | Executar a requisicao | Resposta com status 401 |
-| 3 | Inspecionar o corpo da resposta | Nenhum dado de pet e retornado |
+| 1 | No Swagger, clicar em Authorize, depois em Logout, e fechar a janela | Nenhum token configurado, cadeados abertos |
+| 2 | Abrir GET /api/pets, clicar em Try it out e em Execute | Resposta com status 401 |
+| 3 | Conferir o corpo da resposta | Nenhum dado de pet retornado |
 
-**Parameter values:** baseUrl = `http://localhost:8080`
+**Parameter values:** este caso não usa dados de entrada.
 
 ---
 
-### [403] Tutor acessa rota exclusiva de veterinario e bloqueado
+### [403] Tutor acessa rota exclusiva de veterinário e é bloqueado
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o usuario @emailTutor e guardar o token retornado | Status 200 e token obtido |
-| 2 | Enviar GET para @baseUrl/api/tutores com o header Authorization Bearer e o token do tutor | Requisicao aceita pelo servidor |
-| 3 | Executar a requisicao | Resposta com status 403 |
-| 4 | Inspecionar o corpo da resposta | A lista de tutores nao e retornada |
+| 1 | Fazer login em POST /api/tutores/login com @emailTutor e @senha e copiar o token | Status 200 e token obtido |
+| 2 | Clicar em Authorize, colar o token e confirmar | Swagger autorizado, cadeados fechados |
+| 3 | Abrir GET /api/tutores, clicar em Try it out e em Execute | Resposta com status 403 |
+| 4 | Conferir o corpo da resposta | Mensagem "Você não tem permissão para acessar este recurso." e nenhuma lista de tutores |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutor = `tutor.a@clyvo.com`
+**Parameter values:** emailTutor = `tutor.a@clyvo.com` · senha = `Senha@123`
 
 ---
 
-## SUITE 2 - CRUD de pets na API
+## SUÍTE 2 — CRUD de pets na API
 
-### [201] Pet valido e cadastrado
+### [201] Pet válido é cadastrado
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o tutor @emailTutor e guardar o token | Status 200 e token obtido |
-| 2 | Enviar POST para @baseUrl/api/pets com o token no header Authorization | Requisicao aceita pelo servidor |
-| 3 | Informar no corpo nome @nomePet, especie @especie e data de nascimento @nascimento | Corpo da requisicao montado |
-| 4 | Executar a requisicao | Resposta com status 201 e o corpo contem o id gerado |
-| 5 | Consultar GET @baseUrl/api/pets com o mesmo token | O pet @nomePet aparece na lista do tutor autenticado |
+| 1 | Fazer login como @emailTutor com a senha @senha e autorizar o Swagger com o token | Status 200 e Swagger autorizado |
+| 2 | Abrir POST /api/pets e preencher nome @nomePet, espécie @especie, idade @idade e peso @peso | Corpo exibido com os dados do pet |
+| 3 | Clicar em Execute | Status 201, id gerado e healthScore igual a 100 |
+| 4 | Abrir GET /api/pets e clicar em Execute | O pet @nomePet aparece na lista com o tutorId do tutor autenticado |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutor = `tutor.a@clyvo.com` | nomePet = `Luna` | especie = `CANINO` | nascimento = `2021-03-15`
+**Parameter values:** emailTutor = `tutor.a@clyvo.com` · senha = `Senha@123` · nomePet = `Bob` · especie = `Cachorro` · idade = `4` · peso = `10.5`
 
 ---
 
-### [400] Pet sem nome e recusado
+### [400] Pet sem nome é recusado
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o tutor @emailTutor e guardar o token | Status 200 e token obtido |
-| 2 | Enviar POST para @baseUrl/api/pets omitindo o campo nome | Requisicao aceita pelo servidor |
-| 3 | Executar a requisicao | Resposta com status 400 |
-| 4 | Inspecionar o corpo da resposta | A mensagem identifica o campo nome como invalido |
-| 5 | Consultar GET @baseUrl/api/pets | Nenhum pet novo foi criado |
+| 1 | Fazer login como @emailTutor com a senha @senha e autorizar o Swagger com o token | Status 200 e Swagger autorizado |
+| 2 | Abrir POST /api/pets e preencher espécie @especie, idade @idade e peso @peso, sem o campo nome | Corpo exibido sem o campo nome |
+| 3 | Clicar em Execute | Resposta com status 400 |
+| 4 | Conferir o corpo da resposta | Lista de erros com campo "nome" e mensagem "O nome do pet é obrigatório" |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutor = `tutor.a@clyvo.com`
+**Parameter values:** emailTutor = `tutor.a@clyvo.com` · senha = `Senha@123` · especie = `Gato` · idade = `2` · peso = `3.5`
 
 ---
 
-### [403] Tutor acessa pet de outro tutor e bloqueado
+### [403] Tutor acessa pet de outro tutor e é bloqueado
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o tutor @emailTutorB e cadastrar um pet, guardando o id retornado | Status 201 e id do pet obtido |
-| 2 | Autenticar com o tutor @emailTutorA e guardar o token dele | Status 200 e token obtido |
-| 3 | Enviar GET para @baseUrl/api/pets/@idPetB usando o token do tutor A | Requisicao aceita pelo servidor |
-| 4 | Executar a requisicao | Resposta com status 403 |
-| 5 | Inspecionar o corpo da resposta | Nenhum dado do pet do tutor B e exposto |
+| 1 | Fazer login como @emailTutorB com a senha @senha e autorizar o Swagger com o token | Status 200 e Swagger autorizado |
+| 2 | Abrir GET /api/pets/{id} e informar o id @idPetTutorA | Campo id preenchido |
+| 3 | Clicar em Execute | Resposta com status 403 |
+| 4 | Conferir o corpo da resposta | Mensagem "Este pet não pertence ao tutor autenticado." e nenhum dado do pet |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutorA = `tutor.a@clyvo.com` | emailTutorB = `tutor.b@clyvo.com` | idPetB = `(id obtido no passo 1)`
+**Parameter values:** emailTutorB = `tutor.b@clyvo.com` · senha = `Senha@123` · idPetTutorA = `ID da Luna`
 
-> Este caso e o que reproduz a falha apontada no feedback da Sprint 3. Se a API em teste
-> ainda retornar 200 aqui, marque X vermelho e abra o bug (secao 3).
+> Este caso valida a correção da falha de controle de acesso apontada no feedback da Sprint 3.
 
 ---
 
-### [404] Pet inexistente retorna nao encontrado
+### [404] Pet inexistente retorna não encontrado
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o tutor @emailTutor e guardar o token | Status 200 e token obtido |
-| 2 | Enviar GET para @baseUrl/api/pets/@idInexistente com o token | Requisicao aceita pelo servidor |
-| 3 | Executar a requisicao | Resposta com status 404 |
-| 4 | Inspecionar o corpo da resposta | A mensagem indica recurso nao encontrado, sem stack trace |
+| 1 | Fazer login como @emailTutor com a senha @senha e autorizar o Swagger com o token | Status 200 e Swagger autorizado |
+| 2 | Abrir GET /api/pets/{id}, informar o id @idInexistente e clicar em Execute | Resposta com status 404 |
+| 3 | Conferir o corpo da resposta | Mensagem "Pet não encontrado com o ID: @idInexistente", sem detalhes técnicos do erro |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutor = `tutor.a@clyvo.com` | idInexistente = `999999`
+**Parameter values:** emailTutor = `tutor.a@clyvo.com` · senha = `Senha@123` · idInexistente = `999999`
 
 ---
 
-## SUITE 3 - Cadastro de vacina com data de reforco
+## SUÍTE 3 — Recálculo automático do score por evento
 
-### [201] Vacina com data de aplicacao e reforco e registrada
+### [201] Evento de doença reduz o score do pet
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o veterinario @emailVet e guardar o token | Status 200 e token obtido |
-| 2 | Enviar POST para @baseUrl/api/eventos com o token no header | Requisicao aceita pelo servidor |
-| 3 | Informar petId @idPet, tipo VACINA, data de aplicacao @dataAplicacao e reforco @dataReforco | Corpo da requisicao montado |
-| 4 | Executar a requisicao | Resposta com status 201 e id do evento gerado |
-| 5 | Consultar GET @baseUrl/api/pets/@idPet/eventos | O evento aparece com as duas datas gravadas |
+| 1 | Fazer login em POST /api/veterinarios/login com @emailVet e @senha e autorizar o Swagger | Status 200 e Swagger autorizado |
+| 2 | Abrir GET /api/pets/{id}, informar @idPet, executar e anotar o healthScore | Status 200 e healthScore exibido (100 na primeira execução) |
+| 3 | Abrir POST /api/eventos com petId @idPet, tipoEvento @tipoEvento, descricao @descricao e dataEvento @dataEvento e executar | Status 201 e novoHealthScore igual ao valor anotado menos 15 |
+| 4 | Abrir GET /api/pets/{id} com @idPet e executar | healthScore igual ao novoHealthScore do passo 3 |
+| 5 | Abrir GET /api/eventos/pet/{petId} com @idPet e executar | O evento @tipoEvento aparece na lista |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailVet = `vet.teste@clyvo.com` | idPet = `(id de um pet existente)` | dataAplicacao = `2026-10-01` | dataReforco = `2027-10-01`
+**Parameter values:** emailVet = `vet.teste@clyvo.com` · senha = `Senha@123` · idPet = `ID do Thor` · tipoEvento = `DOENCA_LEVE` · descricao = `Otite leve` · dataEvento = `2026-11-01`
 
 ---
 
-### [400] Vacina sem data de aplicacao e recusada
+### [400] Evento sem data é recusado
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o veterinario @emailVet e guardar o token | Status 200 e token obtido |
-| 2 | Enviar POST para @baseUrl/api/eventos do tipo VACINA omitindo a data de aplicacao | Requisicao aceita pelo servidor |
-| 3 | Executar a requisicao | Resposta com status 400 |
-| 4 | Consultar GET @baseUrl/api/pets/@idPet/eventos | Nenhum evento novo foi gravado |
+| 1 | Fazer login em POST /api/veterinarios/login com @emailVet e @senha e autorizar o Swagger | Status 200 e Swagger autorizado |
+| 2 | Abrir GET /api/pets/{id}, informar @idPet, executar e anotar o healthScore | Status 200 e healthScore exibido |
+| 3 | Abrir POST /api/eventos com petId @idPet, tipoEvento @tipoEvento e descricao @descricao, sem dataEvento, e executar | Status 400 e lista de erros apontando o campo dataEvento |
+| 4 | Abrir GET /api/pets/{id} com @idPet e executar | healthScore igual ao anotado no passo 2 |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailVet = `vet.teste@clyvo.com` | idPet = `(id de um pet existente)`
+**Parameter values:** emailVet = `vet.teste@clyvo.com` · senha = `Senha@123` · idPet = `ID do Thor` · tipoEvento = `VACINA` · descricao = `V10 anual`
 
 ---
 
-## SUITE 4 - Score Engine v1
+## SUÍTE 4 — Score Engine v1
 
-### [200] Score do pet esta entre 0 e 100
+### [201] Vacina em pet com score 100 mantém o score em 100
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o tutor @emailTutor e guardar o token | Status 200 e token obtido |
-| 2 | Enviar GET para @baseUrl/api/pets/@idPet/score com o token | Requisicao aceita pelo servidor |
-| 3 | Executar a requisicao | Resposta com status 200 |
-| 4 | Inspecionar o valor retornado | O score e um numero inteiro maior ou igual a 0 e menor ou igual a 100 |
+| 1 | Fazer login em POST /api/veterinarios/login com @emailVet e @senha e autorizar o Swagger | Status 200 e Swagger autorizado |
+| 2 | Abrir GET /api/pets/{id}, informar @idPet e executar | Status 200 e healthScore igual a 100 |
+| 3 | Abrir POST /api/eventos com petId @idPet, tipoEvento @tipoEvento, descricao @descricao e dataEvento @dataEvento e executar | Status 201 e novoHealthScore igual a 100 |
+| 4 | Abrir GET /api/pets/{id} com @idPet e executar | healthScore continua 100, sem ultrapassar o limite |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutor = `tutor.a@clyvo.com` | idPet = `(id de um pet do tutor A)`
+**Parameter values:** emailVet = `vet.teste@clyvo.com` · senha = `Senha@123` · idPet = `ID da Luna` · tipoEvento = `VACINA` · descricao = `V10 anual` · dataEvento = `2026-11-01`
 
 ---
 
-### [403] Score de pet de outro tutor e bloqueado
+### [201] Eventos graves não deixam o score negativo
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o tutor @emailTutorA e guardar o token | Status 200 e token obtido |
-| 2 | Enviar GET para @baseUrl/api/pets/@idPetB/score usando o token do tutor A | Requisicao aceita pelo servidor |
-| 3 | Executar a requisicao | Resposta com status 403 |
-| 4 | Inspecionar o corpo da resposta | Nenhum score do pet do tutor B e exposto |
+| 1 | Fazer login em POST /api/veterinarios/login com @emailVet e @senha e autorizar o Swagger | Status 200 e Swagger autorizado |
+| 2 | Abrir POST /api/eventos com petId @idPet, tipoEvento @tipoEvento, descricao @descricao e dataEvento @dataEvento e executar | Status 201 e novoHealthScore igual ao score anterior menos 50, nunca abaixo de 0 |
+| 3 | Executar novamente a mesma requisição | Status 201 e novoHealthScore igual a 0 |
+| 4 | Executar a mesma requisição pela terceira vez | Status 201 e novoHealthScore continua 0 |
+| 5 | Abrir GET /api/pets/{id} com @idPet e executar | healthScore igual a 0, sem valor negativo |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutorA = `tutor.a@clyvo.com` | idPetB = `(id de um pet do tutor B)`
+**Parameter values:** emailVet = `vet.teste@clyvo.com` · senha = `Senha@123` · idPet = `ID da Mel` · tipoEvento = `ACIDENTE` · descricao = `Atropelamento` · dataEvento = `2026-11-01`
 
 ---
 
-## SUITE 5 - Listagem de pets ordenada por score
+## SUÍTE 5 — Listagem de pets ordenada por score
 
-### [200] Listagem retorna apenas os pets do usuario autenticado
+### [200] Tutor lista apenas os próprios pets
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Garantir que o tutor @emailTutorA tem @qtdPetsA pets e o tutor @emailTutorB tem outros pets | Base preparada com pets de dois tutores |
-| 2 | Autenticar com o tutor @emailTutorA e guardar o token | Status 200 e token obtido |
-| 3 | Enviar GET para @baseUrl/api/pets com o token do tutor A | Resposta com status 200 |
-| 4 | Contar os itens retornados | A lista traz exatamente @qtdPetsA itens |
-| 5 | Conferir os nomes retornados | Nenhum pet do tutor B aparece na lista |
+| 1 | Fazer login como @emailTutorA com a senha @senha e autorizar o Swagger com o token | Status 200 e Swagger autorizado |
+| 2 | Abrir GET /api/pets e executar | Status 200 com a lista de pets |
+| 3 | Conferir o tutorId de cada pet da lista | Todos os pets têm o tutorId do tutor A |
+| 4 | Procurar na lista o pet @nomePetTutorB | O pet @nomePetTutorB não aparece |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailTutorA = `tutor.a@clyvo.com` | emailTutorB = `tutor.b@clyvo.com` | qtdPetsA = `2`
+**Parameter values:** emailTutorA = `tutor.a@clyvo.com` · senha = `Senha@123` · nomePetTutorB = `Mel`
 
 ---
 
-### [200] Listagem vem ordenada por score crescente
+### [200] Listagem ordenada por score crescente
 
 | N | Action | Expected result |
 |---|--------|-----------------|
-| 1 | Autenticar com o usuario @emailVet e guardar o token | Status 200 e token obtido |
-| 2 | Enviar GET para @baseUrl/api/pets?sort=score,asc com o token | Resposta com status 200 |
-| 3 | Ler os scores na ordem em que vieram | Cada score e maior ou igual ao anterior |
-| 4 | Conferir o primeiro item da lista | O pet de menor score aparece em primeiro lugar |
+| 1 | Fazer login como @emailTutorA com a senha @senha e autorizar o Swagger com o token | Status 200 e Swagger autorizado |
+| 2 | Abrir POST /api/eventos e registrar um evento @tipoEvento para o pet @idPetMenorScore, com descricao @descricao e dataEvento @dataEvento | Status 201 e score do pet reduzido |
+| 3 | Abrir GET /api/pets sem preencher parâmetros e executar | Status 200 com os pets em ordem alfabética |
+| 4 | Abrir GET /api/pets, adicionar no parâmetro sort o valor @ordenacao e executar | Status 200 |
+| 5 | Conferir a ordem dos pets na resposta do passo 4 | O pet @idPetMenorScore aparece primeiro e cada healthScore é maior ou igual ao anterior |
 
-**Parameter values:** baseUrl = `http://localhost:8080` | emailVet = `vet.teste@clyvo.com`
+**Parameter values:** emailTutorA = `tutor.a@clyvo.com` · senha = `Senha@123` · tipoEvento = `DOENCA_LEVE` · idPetMenorScore = `ID do Thor` · descricao = `Gastrite` · dataEvento = `2026-11-01` · ordenacao = `healthScore,asc`
+
+> **Resultado previsto: falha no passo 5.** A resposta vem na mesma ordem alfabética do passo 3.
+> Marque X no passo 5 e abra o Bug 2 (seção 3).
 
 ---
 
-# 3. REGISTRO DE BUG
+# 3. BUGS
 
-O tutorial exige pelo menos um bug no fluxo (slide 15 e checkpoint do slide 20).
 No Test Runner, no passo que falhar:
 
-1. Marcar o **X vermelho** no passo exato que falhou (nao no caso inteiro).
-2. Escrever no campo COMMENT o que aconteceu de fato, com o valor observado.
-   Exemplo: `Esperado 403. Retornou 200 com o corpo completo do pet do tutor B.`
-3. Clicar em **Create bug**, anexar o print da resposta e salvar.
-
-Titulo sugerido do bug:
-`[403 esperado] GET /api/pets/{id} devolve 200 para pet de outro tutor`
-
-Descricao do bug:
-```
-Passos: ver caso de teste [403] Tutor acessa pet de outro tutor e bloqueado
-Resultado esperado: 403 Forbidden
-Resultado obtido: 200 OK com o corpo completo do pet
-Impacto: quebra de isolamento entre tutores, exposicao de dado clinico de terceiro
-Severidade: 1 - Critical
-```
-
-**Se todos os 14 casos passarem na primeira execucao**, voce fica sem bug e perde esse item
-do checkpoint. Nesse caso, execute o caso [403] Tutor acessa pet de outro tutor contra a
-branch anterior a correcao (sprint-03), registre o bug, depois volte para a branch corrigida,
-re-execute e marque Passed. Esse e o ciclo real de QA: bug encontrado, corrigido e reteste.
+1. Marcar o **X vermelho** no passo exato que falhou.
+2. No campo COMMENT, escrever o que aconteceu de fato, com o valor observado.
+3. Clicar em **Create bug**, anexar o print da resposta do Swagger e salvar.
 
 ---
 
-# 4. GRAFICOS
+## Bug 1
 
-Na suite, aba **Chart** > **New** > **New test result chart**:
+**Título:** `[401 esperado] Login com senha incorreta retorna 400`
 
-| Grafico | Chart Type | Group by |
+```
+Caso de teste: [401] Login com senha incorreta é recusado — passo 3
+Resultado esperado: 401 Unauthorized, sem token
+Resultado obtido: 400 Bad Request com o corpo "Erro: E-mail ou senha inválidos."
+Impacto: o cliente não consegue distinguir credencial inválida de erro de
+validação; contraria a semântica HTTP de autenticação.
+Severidade: 3 - Medium
+Causa: TutorService.autenticar e o login de VeterinarioService lançam
+RuntimeException, que o TratadorDeErros converte em 400.
+Correção sugerida: lançar new ResponseStatusException(HttpStatus.UNAUTHORIZED,
+"E-mail ou senha inválidos."), que o TratadorDeErros já converte em 401.
+```
+
+Comentário no passo: `Esperado 401. Retornou 400 com "Erro: E-mail ou senha inválidos."`
+
+---
+
+## Bug 2
+
+**Título:** `Ordenação de GET /api/pets é ignorada após uma listagem anterior`
+
+```
+Caso de teste: [200] Listagem ordenada por score crescente — passo 5
+Resultado esperado: pets do menor para o maior healthScore
+Resultado obtido: pets na mesma ordem alfabética da listagem do passo 3
+Impacto: o painel da clínica pode exibir os pets fora da ordem de risco,
+que é o objetivo do PBI.
+Severidade: 2 - High
+Causa: a chave do cache listaDePets em PetService.listar considera usuário,
+nome, página e tamanho, mas não a ordenação. A segunda chamada recebe o
+resultado guardado da primeira.
+Correção sugerida: incluir + '_' + #paginacao.sort na chave do @Cacheable.
+```
+
+Comentário no passo: `Esperado Thor (menor score) primeiro. Lista veio em ordem alfabética, igual ao passo 3.`
+
+---
+
+## Depois dos bugs
+
+Com os bugs abertos, a equipe de Java aplica as correções sugeridas. Se der tempo antes da
+entrega, reexecutem os dois casos: eles passam a ser aprovados e os bugs podem ser fechados.
+Antes de reexecutar, **tirem print dos dois gráficos** — eles mostram as falhas encontradas.
+
+Se não der tempo de corrigir, a entrega continua completa: casos executados, 2 bugs abertos
+com evidência e gráficos.
+
+---
+
+# 4. GRÁFICOS
+
+Na suíte, aba **Chart** → **New** → **New test result chart**:
+
+| Gráfico | Chart Type | Group by |
 |---------|-----------|----------|
 | 1 | Pie | Outcome |
 | 2 | Pie | Run by |
 
-O grafico "Run by" so fica util se mais de uma pessoa executar casos. Divida assim:
-
-| Integrante | Suites |
-|------------|--------|
-| Eduarda | Suite 1 e Suite 2 |
-| Samara | Suite 3 e Suite 4 |
-| Camily | Suite 5 |
-
 ---
 
-# 5. CHECKLIST FINAL
+# 5. CHECKLIST
 
-- [ ] Licenca Basic + Test Plans ativa para quem escreve os casos
-- [ ] Criterios de aceite dos 5 PBIs reescritos em DADO/QUANDO/ENTAO
-- [ ] 14 casos criados pelo card do PBI (Add Test), nao direto no Test Plans
-- [ ] Todo titulo comeca por [status code]
-- [ ] Todo passo tem Action e Expected result preenchidos
-- [ ] Nenhum valor fixo escrito no texto do passo, tudo em parametro @
-- [ ] Save & Close em cada caso (sem isso o roteiro some)
-- [ ] 14 casos executados no Test Runner, passo a passo
-- [ ] Ao menos 1 bug aberto com comentario e print
-- [ ] Grafico Pie por Outcome criado
-- [ ] Grafico Pie por Run by criado
-- [ ] Contador de testes visivel no card de cada PBI no board
-- [ ] Pelo menos 2 integrantes como executores
+- [ ] Licença Basic + Test Plans ativa para quem escreve os casos
+- [ ] Critérios de aceite dos 5 PBIs em DADO / QUANDO / ENTÃO
+- [ ] 14 casos criados pelo card do PBI (Add Test)
+- [ ] Todo título começa por [status code]
+- [ ] Todo passo com Action e Expected result
+- [ ] Dados de entrada em parâmetro @, nunca escritos fixos no passo
+- [ ] Save & Close em todos os 14
+- [ ] 14 casos executados no Test Runner, passo a passo, com a API rodando
+- [ ] Bug 1 e Bug 2 abertos com comentário e print
+- [ ] Gráfico Pie por Outcome
+- [ ] Gráfico Pie por Run by
+- [ ] Print dos gráficos antes de qualquer reexecução
+- [ ] Contador de testes visível no card de cada PBI no board
